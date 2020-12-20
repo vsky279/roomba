@@ -1,5 +1,3 @@
--- luacheck: globals telnet
-
 --[[SPLIT MODULE telnet]]
 
 --[[  A telnet server   T. Ellison,  June 2019
@@ -31,7 +29,6 @@ local function telnet_session(socket)
 
   local function disconnect_CB(skt) -- upval: socket, stdout
     node.output()
-    telnet = nil
     socket, stdout = nil, nil -- set upvals to nl to allow GC
   end
 
@@ -39,13 +36,13 @@ local function telnet_session(socket)
   socket:on("receive", function(_,rec) node.input(rec) end)
   socket:on("sent", onsent_CB)
   socket:on("disconnection", disconnect_CB)
-  telnet = true
   print(("Welcome to NodeMCU world (%d mem free, %s)"):format(
         node.heap(), wifi.sta.getip()))
 end
 
 function M.open(this, ssid, pwd, port)
-  local tmr, wifi, uwrite = tmr, wifi, uart.write
+  -- local tmr, wifi, uwrite = tmr, wifi, uart.write
+  local tmr, wifi = tmr, wifi
   if ssid then
     wifi.setmode(wifi.STATION, false)
     wifi.sta.config { ssid = ssid, pwd  = pwd, save = false }
@@ -55,11 +52,11 @@ function M.open(this, ssid, pwd, port)
     if (wifi.sta.status() == wifi.STA_GOTIP) then
       t:unregister()
       t=nil
-      -- print(("Telnet server started (%d mem free, %s)"):format(
-             -- node.heap(), wifi.sta.getip()))
+      print(("Telnet server started (%d mem free, %s)"):format(
+             node.heap(), wifi.sta.getip()))
       M.svr = net.createServer(net.TCP, 180)
       M.svr:listen(port or 23, telnet_session)
-    else
+    -- else
       -- uwrite(0,".")
     end
   end)

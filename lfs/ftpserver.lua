@@ -55,7 +55,7 @@ local this, user, pass, ssid, pwd, dbgFlag = ...
   tmr.create():alarm(500, tmr.ALARM_AUTO, function(t) -- this: FTP, user, pass, dbgFlag
     if (wifi.sta.status() == wifi.STA_GOTIP) then
       t:unregister()
-      -- print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
+      print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
       return this:createServer(user, pass, dbgFlag)
     else
       uart.write(0,".")

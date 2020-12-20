@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+	<title>Roomba logger</title>
+	<style type=text/css>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		
+		html,
+		body {
+			height: 100%;
+			font-family: sans-serif;
+			text-align: center;
+			background: #444d44;
+		}
+		
+		#content {
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			width: 800px;
+			height: 480px;
+			margin: auto;
+		}
+		
+		input {
+			-webkit-appearance: none;
+			border-radius: 0;
+		}
+		
+		fieldset {
+			border: 0;
+			box-shadow: 0 0 15px 1px rgba(0, 0, 0, .4);
+			box-sizing: border-box;
+			padding: 20px 30px;
+			background: #fff;
+			min-height: 320px;
+			margin: -1px;
+		}
+		
+		input {
+			border: 1px solid #ccc;
+			margin-bottom: 10px;
+			width: 100%;
+			box-sizing: border-box;
+			color: #222;
+			font: 16px monospace;
+			padding: 15px;
+		}
+		
+		select {
+			font: 16px monospace;
+			background-color: transparent;
+			padding: 15px;
+		}
+		
+		.button {
+			color: #fff;
+			border: 1;
+			border-radius: 3px;
+			cursor: pointer;
+			font: 16px sans-serif;
+			text-decoration: none;
+			padding: 10px 5px;
+			background: #31b457;
+			width: 24%;
+		}
+		
+		.button:focus,
+		.button:hover {
+			box-shadow: 0 0 0 2px #fff, 0 0 0 3px #31b457;
+		}
+        .button:disabled {
+            border: 1px solid #999999;
+            background-color: #cccccc;
+            color: #666666;
+            pointer-events:none;
+            cursor: not-allowed;
+        }
+
+
+		h3 {
+			font-size: 19px;
+			color: #666;
+			margin-bottom: 20px;
+		}
+		
+		h4 {
+			color: #666;
+            text-align: left;
+		}
+        .tg {undefined;table-layout: fixed; width: 100%}
+        .tg td{padding:3px 10px 0px 10px;border-style:none;overflow:hidden;word-break:normal;}
+        .tg .tg-ccaptions {width:30%}
+        .tg .tg-cdettime {width:7%}
+        .tg .tg-cdetrecs {width:15%}
+        .tg .tg-caption {text-align:right;vertical-align:center; font-weight: bold;}
+        .tg .tg-detrecs {text-align:right;vertical-align:center;  font-size: smaller}
+        .tg .tg-buttons {text-align:left;vertical-align:bottom}
+	</style>
+    <script>
+    function formHandler(event)
+    {
+      if (event.submitter.value == "Delete") {
+        return confirm("Do you want to delete '" + event.target.id.value + "'?");
+      } else if  (event.submitter.value == "Chart") {
+         this.location.replace("/chart.html?section=logfiles&id=" + event.target.id.value + "&action=Chart");
+         return false;
+      } else {
+        return true;
+      }  
+    }
+    </script>
+</head>
+
+<body>
+	<div id=content>
+		<fieldset>
+            <h3>Altitude logger</h3>
+            <h4>Log files</h4>
+
+            <table class="tg">
+            <colgroup><col class="tg-ccaptions"><col class="tg-cdetrecs"><col></colgroup>
+            <!--$FILE_REPEAT-->
+            <tr>
+              <td class="tg-caption">$LOGFILE</td>
+              <td class="tg-detrecs">$DETRECS</td>
+              <td class="tg-buttons">
+                <form onsubmit="return formHandler(event);" src="/" method="post">
+                <input type="hidden" name="section" value="logfiles" readonly="readonly"/>
+                <input type="hidden" name="id" value="$LOGFILE" readonly="readonly"/>
+                <input type="submit" class='button' name='action' value="CSV"/>
+                <input type="submit" class='button' name='action' value="Delete" />
+                </form>
+              </td>
+            </tr>
+            <!--$FILE_REPEAT-->
+            </table>
+		</fieldset>
+	</div>
+</body>
+
+</html>

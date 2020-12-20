@@ -10,15 +10,15 @@
 
 r.stream(7, 9, 10, 11, 12, 14, 15, 19, 20, 26, 28, 29, 30, 31,39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 54, 55, 58)
 
-bl-start STR73
+bl-start
+STR73
 bootloader id: #x47015762 B6AE>> FFFF
 bootloader info rev: #xF000
 boot loader rev: #x0001
 2010-05-18-1046-L
 Roomba by iRobot!
 str730
-20
-11-02-18-1446-L
+2011-02-18-1446-L
 battery-current-zero 256
 UI Board SVN Rev: 609
 

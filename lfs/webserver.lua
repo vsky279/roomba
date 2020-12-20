@@ -7,12 +7,14 @@ local W = {}
 local modname = ...
 
 local l=require("logger")
-local INTERVAL = 1 -- measurement interval in seconds
+local pattern = "(%d%d%d%d%d%d)-(%d%d%d%d)%.log"
+local atom = "HbH" -- time in 0.1 seconds, sensor id + sing of value, sensor value (absolute value)
+
 local html_header =
 [[
 HTTP/1.1 200 OK
 Content-Type: text/html
-Connnection: close
+Connection: close
 
 ]]
 local attachment_header =
@@ -20,7 +22,7 @@ local attachment_header =
 HTTP/1.1 200 OK
 Content-Type: application/%s
 Content-Disposition: attachment; filename="%s"
-Connnection: close
+Connection: close
 
 ]]
 
@@ -36,9 +38,21 @@ end
 local function sendlog(client, logfile, json)
   local data, eof = logfile:read(64)
   if data then
+    -- specific way of storing roomba data
+    for _,d in pairs(data) do
+      local d2=d[2]
+      d[3] = d[3] * (d2>0 and 1 or -1)
+      d[2] = (d2>0 and d2 or -d2)
+    end
+    -- //specific way of storing roomba data
     local line = sjson.encode(data)
-    line = string_gsub(line, "[%[%]]", "") -- remove [ ]
-    if json then line = line .. (eof and "" or ",") else line = string_gsub(line, ",", "\n")..(eof and "" or "\n") end
+    if json then
+      line = line .. (eof and "" or ",")
+    else
+      line = string_gsub(line, "%],%[", "\n")
+      line = string_gsub(line, "[%[%]]", "") -- remove [ ]
+      line = line..(eof and "" or "\n")
+    end
     debug("sendlog: sending %d chars", #line)
     client:send(line, function() sendlog(client, logfile, json) end)
   else
@@ -73,7 +87,7 @@ local function webserver_session(socket)
       do
         local _GET = {}
         if (vars ~= nil)then
-            for k, v in string_gmatch(vars, "(%w+)=([a-zA-Z0-9%%+%.]+)&*") do
+            for k, v in string_gmatch(vars, "(%w+)=([a-zA-Z0-9%%+%.%-]+)&*") do
                 _GET[k] = v
             end
         end
@@ -83,14 +97,14 @@ local function webserver_session(socket)
         if _GET_action == "JSON" then -- download log as JSON
           fd:close()
           debug("JSON: %s", _GET_id)
-          local logfile=l.open(_GET_id)
+          local logfile=l.open(_GET_id, pattern, atom)
           local fn = string_gsub(_GET_id, "log","json")
           return client:send(attachment_header:format("json", fn).."[",
             function() sendlog(client,  logfile, true) end)
         elseif _GET_action == "CSV" then -- download log as CSV
           fd:close()
           debug("CSV: %s", _GET_id)
-          local logfile=l.open(_GET_id)
+          local logfile=l.open(_GET_id, pattern, atom)
           local fn = string_gsub(_GET_id, "log","csv")
           return client:send(attachment_header:format("csv", fn),
             function() sendlog(client, logfile) end)
@@ -109,7 +123,7 @@ local function webserver_session(socket)
               fls[1]=_GET_id
             else
               do
-                local fl = file_list(".*%.log")
+                local fl = file_list(pattern)
                 for n in pairs(fl) do table.insert(fls, n) end
               end -- free fl
               table_sort(fls)
@@ -121,11 +135,9 @@ local function webserver_session(socket)
                 debug("preparing index.html: %s", logfile)
                 local lline = line
                 lline = string_gsub(lline, "$LOGFILE", logfile)
-                local lf, s= l.open(logfile)
+                local lf, s= l.open(logfile, pattern, atom)
                 lf:close()
-                s = s * INTERVAL
-                lline = string_gsub(lline, "$DETTIME", ("%d:%02d"):format(s //60, s % 60))
-                lline = string_gsub(lline, "$DETRECS", ("(%d records)")%s)
+                lline = string_gsub(lline, "$DETRECS", ("%d records")%s)
                 client:send(lline, function()
                   local _, done =coroutine.resume(lco)
                   if done then

@@ -1,3 +1,4 @@
+-- luacheck: globals dsleep_arm
 -- init.lua, version 20.09
 local fn= "roomba"
 local reg = 10
@@ -7,6 +8,7 @@ local smph = {0x534d, 0x5048}
 local pcall, dofile, print, unpack, require, table_concat, table_insert, string_dump =
   pcall, dofile, print, unpack, require, table.concat, table.insert, string.dump
 local file_open = file.open
+-- local node_dsleep = node.dsleep
 local uwrite, rtcmem_read32, rtcmem_write32, tmr_create, tmr_ALARM_SINGLE, tmr_ALARM_AUTO, enduser_setup_start,
   enduser_setup_stop, node_restart =
   uart.write, rtcmem.read32, rtcmem.write32, tmr.create, tmr.ALARM_SINGLE, tmr.ALARM_AUTO, enduser_setup.start,
@@ -15,10 +17,21 @@ local wifi_sta = wifi.sta
 local wifi_sta_status, wifi_sta_getip, wifi_sta_getapinfo, wifi_sta_config, wifi_STA_GOTIP, wifi_STA_CONNECTING =
   wifi_sta.status, wifi_sta.getip, wifi_sta.getapinfo, wifi_sta.config, wifi.STA_GOTIP, wifi.STA_CONNECTING
 
+-- sleep_max = node.dsleepMax()/1e6 --4294 -- max delay; wake up no later then in sleep_max
+  
 -- Execute the LFS init
 local lfs_t = node.LFS
 package.loaders[3] = function(module) -- loader_flash
   return lfs_t[module]
+end
+
+file=require("file_lfs")
+
+function dsleep_arm(tm) -- must be GLOBAL
+    print(("Sleeping for %.0f seconds now."):format(tm))
+    -- rtcmem_write32(dsleepreg, dsleepcnt)
+    -- tmr_create():alarm(600, tmr_ALARM_SINGLE, function() return node_dsleep(tm * 1e6, dsleepcnt == 0 and 3 or 4) end)
+    tmr_create():alarm(tm * 1e6, tmr_ALARM_SINGLE, function() node.restart() end)
 end
 
 local credentials={}
@@ -73,9 +86,12 @@ if s and check == "credentials" then
 end
 -- print (("[init] %d credential(s) found"):format(#credentials))
 
+-- require("nunu") -- also overrides global print
+
 -- print("[init] telnet/ftp")
 require("telnet"):open()
 -- require("ftpserver"):createServer('root', '123')
+-- local webserver = require("webserver")
 
 wifi.setmode(wifi.STATION)
 -- wifi.setphymode(wifi.PHYMODE_G)
@@ -98,6 +114,8 @@ tmr_wifi:alarm(500, tmr_ALARM_AUTO, function()
     enduser_setup_stop()
     -- print("\n[init] IP: "..wifi_sta_getip())
     save_credentials()
+    -- webserver:close() -- close it in case it was open by enduser_setup on port 8080
+    -- webserver:open()
 
     if not (rtcmem_read32(reg) == smph[1] and  rtcmem_read32(reg+1) == smph[2]) then
       rtcmem_write32(reg, unpack(smph))
@@ -122,10 +140,12 @@ tmr_wifi:alarm(500, tmr_ALARM_AUTO, function()
 
     if eus_start then
       -- print("\n[init] Starting EUS")
+      -- webserver:close()
       eus_start=nil
       tmr_enduser = tmr_create()
       tmr_enduser:alarm(180000, tmr_ALARM_SINGLE, restart)
       enduser_setup_start()
-     end
+      -- webserver:open(8080)
+    end
   end
 end)

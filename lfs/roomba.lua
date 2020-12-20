@@ -90,6 +90,11 @@ roomba.sensors = function(packet)
   local _ = queue << {128, 142, packet & 0x7}
 end
 
+roomba.query = function(...)
+  local ids = {...}
+  local _ = queue << {128, 149, #ids, ...}
+end
+
 roomba.stream = function(...)
   local ids = {...}
   local _ = queue << {128, 148, #ids, ...}
@@ -310,6 +315,10 @@ roomba.datagram = function(data)
   end
 
   return response
+end
+
+roomba.transmitting = function()
+  return #queue > 0
 end
 
 local function init(lwrite)
